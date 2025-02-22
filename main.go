@@ -309,14 +309,6 @@ func generate(release *github.RepositoryRelease, ruleSetOutput string) error {
 	filterTags(domainMap)
 	mergeTags(domainMap)
 
-	cnCodes := []string{
-		"geolocation-cn",
-	}
-	cnDomainMap := make(map[string][]geosite.Item)
-
-	for _, cnCode := range cnCodes {
-		cnDomainMap[cnCode] = domainMap[cnCode]
-	}
 	os.RemoveAll(ruleSetOutput)
 	err = os.MkdirAll(ruleSetOutput, 0o755)
 	if err != nil {
@@ -337,7 +329,7 @@ func generate(release *github.RepositoryRelease, ruleSetOutput string) error {
 			},
 		}
 		srsPath, _ := filepath.Abs(filepath.Join(ruleSetOutput, "geosite_"+code+".srs"))
-		// os.Stderr.WriteString("write " + srsPath + "\n")
+		// os.Stderr.WriteString("wrote " + srsPath + "\n")
 		var (
 			outputRuleSet *os.File
 		)
