@@ -39,5 +39,4 @@ jobs:
           ./sing-box rule-set decompile publish/geosite_cn.srs -o geosite_cn.json
           ./sing-box rule-set decompile publish/geosite_geolocation-!cn.srs -o geosite_non_cn.json
           jq -cn --slurpfile include geosite_cn.json --slurpfile exclude geosite_non_cn.json -f filter.jq > custom_logical_cn.json
-          ./sing-box rule-set compile publish/custom_logical_cn.json -o publish/custom_logical_cn.srs
-
+          ./sing-box rule-set compile custom_logical_cn.json -o publish/custom_logical_cn.srs
