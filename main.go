@@ -379,7 +379,7 @@ func release(source string, destination string, ruleSetOutput string) error {
 	if err != nil {
 		log.Warn("missing destination latest release")
 	} else {
-		if os.Getenv("NO_SKIP") != "true" && strings.Contains(*destinationRelease.Name, *sourceRelease.Name) {
+		if os.Getenv("NO_SKIP") != "true" && strings.Contains(*destinationRelease.TagName, *sourceRelease.TagName) {
 			log.Info("already latest")
 			setActionOutput("skip", "true")
 			return nil
