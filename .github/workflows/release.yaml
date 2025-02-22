@@ -48,6 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish release branch
+        if: steps.build.outputs.skip != 'true'
         run: |
           cd publish || exit 1
           git init
@@ -69,3 +70,13 @@ jobs:
             publish/geosite_cn.srs
             publish/geosite_geolocation-!cn.srs
             publish/geosite_category-ads-all.srs
+
+      - name: Purge jsdelivr cache
+        if: steps.build.outputs.skip != 'true'
+        run: |
+          for file in cn geolocation-!cn category-ads-all; do
+            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/geosite_${file}.srs"
+          done
+          for file in cn; do
+            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/custom_logical_${file}.srs"
+          done
