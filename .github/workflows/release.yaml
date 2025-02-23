@@ -36,9 +36,7 @@ jobs:
           curl -sSLO $SB_BIN_URL
           tar xf sing-box-*-linux-amd64.tar.gz
           cp sing-box-*-linux-amd64/sing-box ./
-          ./sing-box rule-set decompile publish/geosite_cn.srs -o geosite_cn.json
-          ./sing-box rule-set decompile publish/geosite_geolocation-!cn.srs -o geosite_non_cn.json
-          jq -cn --slurpfile include geosite_cn.json --slurpfile exclude geosite_non_cn.json -f filter.jq > custom_logical_cn.json
+          jq -cn --slurpfile include publish/geosite_cn.json --slurpfile exclude publish/geosite_geolocation-!cn.json -f filter.jq > custom_logical_cn.json
           ./sing-box rule-set compile custom_logical_cn.json -o publish/custom_logical_cn.srs
 
       - uses: dev-drprasad/delete-older-releases@v0.3.2
@@ -75,7 +73,7 @@ jobs:
       - name: Purge jsdelivr cache
         if: steps.build.outputs.skip != 'true'
         run: |
-          for file in cn geolocation-!cn category-ads-all; do
+          for file in cn geolocation-.cn category-ads-all; do
             curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/geosite_${file}.srs"
           done
           for file in cn; do
