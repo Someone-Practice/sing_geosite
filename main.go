@@ -331,18 +331,18 @@ func write(headlessRule []option.DefaultHeadlessRule, outputPath string) error {
 			}),
 		},
 	}
-	err := writeSource(&plainRuleSet, outputPath+".json")
+	err := writeSource(plainRuleSet, outputPath+".json")
 	if err != nil {
 		return err
 	}
-	err = writeBinary(&plainRuleSet, outputPath+".srs")
+	err = writeBinary(plainRuleSet, outputPath+".srs")
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeSource(plainRuleSet *option.PlainRuleSetCompat, outputPath string) error {
+func writeSource(plainRuleSet option.PlainRuleSetCompat, outputPath string) error {
 	outputRuleSet, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -357,7 +357,7 @@ func writeSource(plainRuleSet *option.PlainRuleSetCompat, outputPath string) err
 	return nil
 }
 
-func writeBinary(plainRuleSet *option.PlainRuleSetCompat, outputPath string) error {
+func writeBinary(plainRuleSet option.PlainRuleSetCompat, outputPath string) error {
 	outputRuleSet, err := os.Create(outputPath)
 	if err != nil {
 		return err
