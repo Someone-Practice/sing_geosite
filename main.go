@@ -18,6 +18,7 @@ import (
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/json"
 
 	"github.com/google/go-github/v45/github"
 	"github.com/v2fly/v2ray-core/v5/app/router/routercommon"
@@ -117,15 +118,9 @@ func parse(vGeositeData []byte) (map[string][]geosite.Item, error) {
 					Value: domain.Value,
 				})
 			case routercommon.Domain_RootDomain:
-				if strings.Contains(domain.Value, ".") {
-					domains = append(domains, geosite.Item{
-						Type:  geosite.RuleTypeDomain,
-						Value: domain.Value,
-					})
-				}
 				domains = append(domains, geosite.Item{
 					Type:  geosite.RuleTypeDomainSuffix,
-					Value: "." + domain.Value,
+					Value: domain.Value,
 				})
 			case routercommon.Domain_Full:
 				domains = append(domains, geosite.Item{
@@ -150,15 +145,9 @@ func parse(vGeositeData []byte) (map[string][]geosite.Item, error) {
 						Value: domain.Value,
 					})
 				case routercommon.Domain_RootDomain:
-					if strings.Contains(domain.Value, ".") {
-						attributeDomains = append(attributeDomains, geosite.Item{
-							Type:  geosite.RuleTypeDomain,
-							Value: domain.Value,
-						})
-					}
 					attributeDomains = append(attributeDomains, geosite.Item{
 						Type:  geosite.RuleTypeDomainSuffix,
-						Value: "." + domain.Value,
+						Value: domain.Value,
 					})
 				case routercommon.Domain_Full:
 					attributeDomains = append(attributeDomains, geosite.Item{
@@ -238,8 +227,8 @@ func filterTags(data map[string][]geosite.Item) {
 	}
 	sort.Strings(filteredCodeMap)
 	sort.Strings(mergedCodeMap)
-	os.Stderr.WriteString("filtered " + strings.Join(filteredCodeMap, ",") + "\n")
-	os.Stderr.WriteString("merged " + strings.Join(mergedCodeMap, ",") + "\n")
+	log.Info("Filtered: " + strings.Join(filteredCodeMap, ", "))
+	log.Info("Merged: " + strings.Join(mergedCodeMap, ", "))
 }
 
 func mergeTags(data map[string][]geosite.Item) {
@@ -294,7 +283,7 @@ func mergeTags(data map[string][]geosite.Item) {
 		Type:  geosite.RuleTypeDomainSuffix,
 		Value: "cn",
 	})
-	println("merged cn categories: " + strings.Join(cnCodeList, ","))
+	log.Info("Merged cn categories: " + strings.Join(cnCodeList, ", "))
 }
 
 func generate(release *github.RepositoryRelease, ruleSetOutput string) error {
@@ -315,33 +304,72 @@ func generate(release *github.RepositoryRelease, ruleSetOutput string) error {
 		return err
 	}
 	for code, domains := range domainMap {
-		var headlessRule option.DefaultHeadlessRule
 		defaultRule := geosite.Compile(domains)
-		headlessRule.Domain = defaultRule.Domain
-		headlessRule.DomainSuffix = defaultRule.DomainSuffix
-		headlessRule.DomainKeyword = defaultRule.DomainKeyword
-		headlessRule.DomainRegex = defaultRule.DomainRegex
-		var plainRuleSet option.PlainRuleSet
-		plainRuleSet.Rules = []option.HeadlessRule{
+		headlessRule := []option.DefaultHeadlessRule{
 			{
-				Type:           C.RuleTypeDefault,
-				DefaultOptions: headlessRule,
+				Domain:        defaultRule.Domain,
+				DomainKeyword: defaultRule.DomainKeyword,
+				DomainSuffix:  defaultRule.DomainSuffix,
+				DomainRegex:   defaultRule.DomainRegex,
 			},
 		}
-		srsPath, _ := filepath.Abs(filepath.Join(ruleSetOutput, "geosite_"+code+".srs"))
-		// os.Stderr.WriteString("wrote " + srsPath + "\n")
-		var (
-			outputRuleSet *os.File
-		)
-		outputRuleSet, err = os.Create(srsPath)
-		if err != nil {
-			return err
-		}
-		err = srs.Write(outputRuleSet, plainRuleSet, 3)
-		outputRuleSet.Close()
-		if err != nil {
-			return err
-		}
+		outputPath, _ := filepath.Abs(filepath.Join(ruleSetOutput, "geosite_"+code+""))
+		write(headlessRule, outputPath)
+	}
+	return nil
+}
+
+func write(headlessRule []option.DefaultHeadlessRule, outputPath string) error {
+	plainRuleSet := option.PlainRuleSetCompat{
+		Version: 3,
+		Options: option.PlainRuleSet{
+			Rules: common.Map(headlessRule, func(headlessRule option.DefaultHeadlessRule) option.HeadlessRule {
+				return option.HeadlessRule{
+					Type:           C.RuleTypeDefault,
+					DefaultOptions: headlessRule,
+				}
+			}),
+		},
+	}
+	err := writeSource(&plainRuleSet, outputPath+".json")
+	if err != nil {
+		return err
+	}
+	err = writeBinary(&plainRuleSet, outputPath+".srs")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeSource(plainRuleSet *option.PlainRuleSetCompat, outputPath string) error {
+	outputRuleSet, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	encoder := json.NewEncoder(outputRuleSet)
+	encoder.SetIndent("", "  ")
+	err = encoder.Encode(plainRuleSet)
+	outputRuleSet.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeBinary(plainRuleSet *option.PlainRuleSetCompat, outputPath string) error {
+	outputRuleSet, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	ruleSet, err := plainRuleSet.Upgrade()
+	if err != nil {
+		return err
+	}
+	err = srs.Write(outputRuleSet, ruleSet, 3)
+	outputRuleSet.Close()
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -369,10 +397,10 @@ func release(source string, destination string, ruleSetOutput string) error {
 	}
 	destinationRelease, err := fetch(destination)
 	if err != nil {
-		log.Warn("missing destination latest release")
+		log.Warn("Destination repo does not exist.")
 	} else {
 		if os.Getenv("NO_SKIP") != "true" && strings.Contains(*destinationRelease.TagName, *sourceRelease.TagName) {
-			log.Info("already latest")
+			log.Warn("Current release is already the latest version.")
 			setActionOutput("skip", "true")
 			return nil
 		}
