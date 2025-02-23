@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'main.go'
 
 jobs:
   build:
@@ -36,7 +38,5 @@ jobs:
           curl -sSLO $SB_BIN_URL
           tar xf sing-box-*-linux-amd64.tar.gz
           cp sing-box-*-linux-amd64/sing-box ./
-          ./sing-box rule-set decompile publish/geosite_cn.srs -o geosite_cn.json
-          ./sing-box rule-set decompile publish/geosite_geolocation-!cn.srs -o geosite_non_cn.json
-          jq -cn --slurpfile include geosite_cn.json --slurpfile exclude geosite_non_cn.json -f filter.jq > custom_logical_cn.json
+          jq -cn --slurpfile include publish/geosite_cn.json --slurpfile exclude publish/geosite_geolocation-!cn.json -f filter.jq > custom_logical_cn.json
           ./sing-box rule-set compile custom_logical_cn.json -o publish/custom_logical_cn.srs
