@@ -308,8 +308,8 @@ func generate(release *github.RepositoryRelease, ruleSetOutput string) error {
 		headlessRule := []option.DefaultHeadlessRule{
 			{
 				Domain:        defaultRule.Domain,
-				DomainKeyword: defaultRule.DomainKeyword,
 				DomainSuffix:  defaultRule.DomainSuffix,
+				DomainKeyword: defaultRule.DomainKeyword,
 				DomainRegex:   defaultRule.DomainRegex,
 			},
 		}
@@ -323,10 +323,10 @@ func write(headlessRule []option.DefaultHeadlessRule, outputPath string) error {
 	plainRuleSet := option.PlainRuleSetCompat{
 		Version: 3,
 		Options: option.PlainRuleSet{
-			Rules: common.Map(headlessRule, func(headlessRule option.DefaultHeadlessRule) option.HeadlessRule {
+			Rules: common.Map(headlessRule, func(rule option.DefaultHeadlessRule) option.HeadlessRule {
 				return option.HeadlessRule{
 					Type:           C.RuleTypeDefault,
-					DefaultOptions: headlessRule,
+					DefaultOptions: rule,
 				}
 			}),
 		},
