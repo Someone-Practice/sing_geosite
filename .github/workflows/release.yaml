@@ -31,13 +31,13 @@ jobs:
       - name: Build custom logical rules
         if: steps.build.outputs.skip != 'true'
         env:
-          SB_BIN_URL: https://github.com/SagerNet/sing-box/releases/download/v1.11.3/sing-box-1.11.3-linux-amd64.tar.gz
+          SB_BIN_URL: https://github.com/SagerNet/sing-box/releases/download/v1.11.4/sing-box-1.11.4-linux-amd64.tar.gz
         run: |
           curl -sSLO $SB_BIN_URL
           tar xf sing-box-*-linux-amd64.tar.gz
           cp sing-box-*-linux-amd64/sing-box ./
-          jq -cn --slurpfile include publish/geosite_cn.json --slurpfile exclude publish/geosite_geolocation-!cn.json -f filter.jq > custom_logical_cn.json
-          ./sing-box rule-set compile custom_logical_cn.json -o publish/custom_logical_cn.srs
+          jq -cn --slurpfile include publish/geosite_cn.json --slurpfile exclude publish/geosite_geolocation-!cn.json -f filter.jq > publish/custom_logical_cn.json
+          ./sing-box rule-set compile publish/custom_logical_cn.json
 
       - uses: dev-drprasad/delete-older-releases@v0.3.2
         if: steps.build.outputs.skip != 'true'
