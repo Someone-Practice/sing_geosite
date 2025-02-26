@@ -6,10 +6,9 @@
 ($exclude[0].rules[0].domain_suffix // []) as $suffix_exclude |
 ($exclude[0].rules[0].domain_keyword // []) as $keyword_exclude |
 ($exclude[0].rules[0].domain_regex // []) as $regex_exclude |
-def intersection(x; y):
-	( (x | unique) + (y | unique) | sort) as $sorted
-	| reduce range(1; $sorted | length) as $i
-		([]; if $sorted[$i] == $sorted[$i-1] then . + [$sorted[$i]] else . end) ;
+def intersection(array_1; array_2):
+	(array_1 | unique | map({(.): true}) | add) as $keymap
+	| array_2 | unique | map(select($keymap[.]));
 ($domain_include - intersection($domain_include; $suffix_include)) as $domain_merged_include |
 ($domain_exclude - intersection($domain_exclude; $suffix_exclude)) as $domain_merged_exclude |
 intersection($domain_merged_include; $domain_merged_exclude) as $domain_intersection |
